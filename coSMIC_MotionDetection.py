@@ -20,7 +20,7 @@ from pymetawear.client import MetaWearClient
 address1 = 'E3:53:A4:26:93:0F'
 address2 = 'F4:94:79:03:D2:93'
 
-useTwoClients = False
+useTwoClients = True
 
 client1 = MetaWearClient(str(address1), debug=False)
 print("New client created: {0}".format(client1))
@@ -41,9 +41,9 @@ if useTwoClients:
 time.sleep(1.0)
 
 print("\nWrite accelerometer settings...")
-client1.accelerometer.set_settings(data_rate=200, data_range=4.0)
+client1.accelerometer.set_settings(data_rate=25, data_range=4.0)
 if useTwoClients:
-	client2.accelerometer.set_settings(data_rate=200, data_range=4.0)
+	client2.accelerometer.set_settings(data_rate=25, data_range=4.0)
 
 time.sleep(1.0)
 
@@ -62,9 +62,9 @@ if useTwoClients:
 	sens2 = SensDataProc(parPort)
 
 print("\nSubscribing to accelerometer signal notifications...")
-client1.accelerometer.high_frequency_stream = True
+client1.accelerometer.high_frequency_stream = False
 if useTwoClients:
-	client2.accelerometer.high_frequency_stream = True
+	client2.accelerometer.high_frequency_stream = False
 
 client1.accelerometer.notifications(lambda data : sens1.dataProcessing(data, 1))
 if useTwoClients:
