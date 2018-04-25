@@ -12,13 +12,14 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 import time
+from coSMIC_SensDataSaving import SensDataSaving
 
 from pymetawear.client import MetaWearClient
 
 address1 = 'E3:53:A4:26:93:0F'
 address2 = 'F4:94:79:03:D2:93'
 
-useTwoClients = False
+useTwoClients = True
 
 client1 = MetaWearClient(str(address1), debug=True)
 print("New client created: {0}".format(client1))
@@ -39,9 +40,9 @@ if useTwoClients:
 time.sleep(1.0)
 
 print("\nWrite accelerometer settings...")
-client1.accelerometer.set_settings(data_rate=50, data_range=4.0)
+client1.accelerometer.set_settings(data_rate=400, data_range=4.0)
 if useTwoClients:
-	client2.accelerometer.set_settings(data_rate=50, data_range=4.0)
+	client2.accelerometer.set_settings(data_rate=400, data_range=4.0)
 
 time.sleep(1.0)
 
@@ -54,9 +55,10 @@ if useTwoClients:
 	settings = client2.accelerometer.get_current_settings()
 	print(settings)
 
-client1.accelerometer.high_frequency_stream = False
+
+client1.accelerometer.logging = True
 if useTwoClients:
-	client2.accelerometer.high_frequency_stream = False
+	client2.accelerometer.logging = True
 
 client1.accelerometer.start_logging()
 if useTwoClients:
@@ -68,15 +70,25 @@ print("\nLogging...")
 #while message != 'q': 
 #    message = raw_input(prompt) 
 
-time.sleep(5.0)
+time.sleep(0.25)
 print("Logging stopped.")
 
-client1.accelerometer.download_log(lambda data : print(data))
+filename1 = 'sensor1.cvs'
+filename2 = 'sensor2.cvs'
+sens1 = SensDataSaving(filename1)
 if useTwoClients:
-	client2.accelerometer.download_log(lambda data : print(data))
+	sens2 = SensDataSaving(filename2)
+
 print("\nDownloading Data...")
+client1.accelerometer.download_log(lambda data : sens1.download_callback(data, filename1))
+if useTwoClients:
+	client2.accelerometer.download_log(lambda data : sens2.download_callback(data, filename2))
 
 time.sleep(5.0)
+
+sens1.close_csv()
+if useTwoClients:
+        sens2.close_csv
 
 print("\nDisconnecting...")
 client1.disconnect()
