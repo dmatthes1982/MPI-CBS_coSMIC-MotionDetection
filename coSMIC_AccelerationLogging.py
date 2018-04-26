@@ -55,15 +55,18 @@ if useTwoClients:
 	settings = client2.accelerometer.get_current_settings()
 	print(settings)
 
+time.sleep(1.0)
+print("\n")
 
 client1.accelerometer.logging = True
 if useTwoClients:
 	client2.accelerometer.logging = True
 
 client1.accelerometer.start_logging()
+print("Logging accelerometer data at client 1...")
 if useTwoClients:
-	client2.accelerometer.start_logging()
-print("\nLogging...")
+        client2.accelerometer.start_logging()
+        print("Logging accelerometer data at client 2...")
 
 #prompt = "\nPress q and Enter to quit logging...\n\n" 
 #message = "" 
@@ -71,7 +74,14 @@ print("\nLogging...")
 #    message = raw_input(prompt) 
 
 time.sleep(0.25)
-print("Logging stopped.")
+
+client1.accelerometer.stop_logging()
+print("Logging stopped at client 1.")
+if useTwoClients:
+        client2.accelerometer.stop_logging()
+        print("Logging stopped at client 2.")
+
+time.sleep(1.0)
 
 filename1 = 'sensor1.cvs'
 filename2 = 'sensor2.cvs'
@@ -79,12 +89,23 @@ sens1 = SensDataSaving(filename1)
 if useTwoClients:
 	sens2 = SensDataSaving(filename2)
 
-print("\nDownloading Data...")
-client1.accelerometer.download_log(lambda data : sens1.download_callback(data, filename1))
+print("\nDownloading data from client 1...")
+client1.accelerometer.download_log(client1, lambda data : sens1.download_callback(data, filename1))
 if useTwoClients:
-	client2.accelerometer.download_log(lambda data : sens2.download_callback(data, filename2))
+        print("\nDownloading data from client 2...")
+	client2.accelerometer.download_log(client2, lambda data : sens2.download_callback(data, filename2))
+
+pattern1 = client1.led.load_preset_pattern('blink', repeat_count=10)
+pattern2 = client2.led.load_preset_pattern('blink', repeat_count=10)
+client1.led.write_pattern(pattern1, 'g')
+client2.led.write_pattern(pattern2, 'g')
+client1.led.play()
+client2.led.play()
 
 time.sleep(5.0)
+
+client1.led.stop_and_clear()
+client2.led.stop_and_clear()
 
 sens1.close_csv()
 if useTwoClients:
