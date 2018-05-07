@@ -17,7 +17,7 @@ class SensDataSaving:
                                                         quoting=csv.QUOTE_NONE)
                 self.datawriter.writerow(['epoch', 'timestamp', 'x', 'y', 'z'])
   
-        def download_callback(self, data, filename):
+        def data2cvs(self, data, filename):
                 epoch = float(data['epoch']) / 1000
                 accel = data['value']
                 timeVal = datetime.fromtimestamp(epoch)
@@ -27,7 +27,6 @@ class SensDataSaving:
                         timeVal.second, millisec)
                 timestamp = data['epoch']
                 data['epoch'] = epoch
-                print(data)
                 self.datawriter.writerow([epoch, timestamp, accel.x, accel.y, accel.z])
         
         def close_csv(self):

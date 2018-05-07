@@ -10,7 +10,6 @@ Created on 2018-04-11
 import parallel
 import numpy as np
 from numpy_ringbuffer import RingBuffer
-import pdb
 
 class SensDataProc:
 	def __init__(self, par):
