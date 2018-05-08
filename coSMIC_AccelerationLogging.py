@@ -24,7 +24,35 @@ address2 = 'F4:94:79:03:D2:93'
 useTwoClients = True
 
 '''
-Estabish connections
+Subfunction: Reconnect client
+'''
+def bt_reconnect(client):
+        bt_disconnect(client)
+        try:
+                bt_connect(client)
+        except RuntimeError as e:
+                raise e
+        time.sleep(0.5)
+
+'''
+Subfunction: Connect client
+'''
+def bt_connect(client):
+        time.sleep(0.5)
+        try:
+                client.mw.connect()
+        except RuntimeError as e:
+                raise e
+
+'''
+Subfunction: Disconnect client
+'''
+def bt_disconnect(client):
+        time.sleep(0.5)
+        client.mw.disconnect()
+
+'''
+Establish connections
 '''
 try:
         client1 = MetaWearClient(str(address1), debug=False)
@@ -94,9 +122,12 @@ while not logging_started:
                 if attempt == 4:
                         break
                 print("Reconnecting, try number {0}...".format(attempt))
-                client1.mw.disconnect()
-                client1.mw.connect()
-                time.sleep(1.0)
+                try:
+                        bt_reconnect(client1)
+                except RuntimeError as e:
+                        print(e)
+                        bt_disconnect(client2)
+                        quit()
         else:
                 print("\nLogging accelerometer data at client 1...")
                 parPort.setData(0x64)
@@ -125,9 +156,12 @@ if useTwoClients:
                         if attempt == 4:
                                 break
                         print("Reconnecting, try number {0}...".format(attempt))
-                        client2.mw.disconnect()
-                        client2.mw.connect()
-                        time.sleep(1.0)
+                        try:
+                                bt_reconnect(client2)
+                        except RuntimeError as e:
+                                print(e)
+                                bt_disconnect(client1)
+                                quit()
                 else:
                         print("Logging accelerometer data at client 2...")
                         parPort.setData(0x66)
@@ -162,49 +196,73 @@ if useTwoClients:
 time.sleep(1.0)
 
 '''
+Disconnect all bluetooth connection during logging process
+'''
+print("\nDisconnect all bluetooth connections during the recording session\n")
+bt_disconnect(client1)
+bt_disconnect(client2)
+
+'''
 Waiting until q pressed
 '''
 
-prompt = "\nPress q and Enter to quit logging...\n\n"
+prompt = "Press q and Enter to quit logging...\n\n"
 message = ""
 while message != 'q':
     message = raw_input(prompt)
 
 '''
-Stop logging accelerometer data
+Reconnect with client 1
+'''
+
+try:
+        print("\nConnecting with client 1...")
+        bt_connect(client1)
+except RuntimeError as e:
+        print(e)
+        quit()
+
+'''
+Stop logging accelerometer data in client 1
 '''
 
 client1.accelerometer.stop_logging()
-print("\nLogging stopped at client 1.")
+print("Logging stopped at client 1.")
 parPort.setData(0x65)
-print("Client 1 stopped - 0x65 send\n")
+print("Client 1 stopped - 0x65 send")
 time.sleep(0.05)
 parPort.setData(0x00)
+
+'''
+Reconnect with client 2, disconnect client 1
+'''
+
+print("Disconnect client 1.")
+bt_disconnect(client1)
+try:
+        print("\nConnecting with client 2...")
+        bt_connect(client2)
+except RuntimeError as e:
+        print(e)
+        quit()
+
+'''
+Stop logging accelerometer data in client 2
+'''
 
 if useTwoClients:
         client2.accelerometer.stop_logging()
         print("Logging stopped at client 2.")
         parPort.setData(0x67)
-        print("Client 2 stopped - 0x67 send\n")
+        print("Client 2 stopped - 0x67 send")
         time.sleep(0.05)
         parPort.setData(0x00)
 
 '''
-Check accelerometer settings
+Disconnect client 2
 '''
-
-print("Check accelerometer settings of client 1...")
-settings = client1.accelerometer.get_current_settings()
-print(settings)
-
-time.sleep(1.0)
-
-if useTwoClients:
-	print("Check accelerometer settings of client 2...")
-	settings = client2.accelerometer.get_current_settings()
-	print(settings)
-
-time.sleep(1.0)
+print("Disconnect client 2.")
+bt_disconnect(client2)
 
 '''
 Download accelerometer data
@@ -216,9 +274,17 @@ sens1 = SensDataSaving(filename1)
 if useTwoClients:
 	sens2 = SensDataSaving(filename2)
 
-client2.mw.disconnect()
+'''
+Reconnect with client 1
+'''
+try:
+        print("\nConnecting with client 1...")
+        bt_connect(client1)
+except RuntimeError as e:
+        print(e)
+        quit()
 
-print("\nDownloading data from client 1...\n")
+print("Downloading data from client 1...\n")
 download_complete = False
 attempt = 1
 while not download_complete:
@@ -230,23 +296,29 @@ while not download_complete:
                 if attempt == 4:
                         break
                 print("Reconnecting, try number {0}...".format(attempt))
-                client1.mw.disconnect()
-                client1.mw.connect()
-                time.sleep(1.0)
+                try:
+                        bt_reconnect(client1)
+                except RuntimeError as e:
+                        print(e)
         else:
                 download_complete = True
                 for d in data:
                         sens1.data2cvs(d, filename1)
 
+'''
+Reconnect with client 2, disconnect client 1
+'''
+
+print("\nDisconnect client 1.")
+bt_disconnect(client1)
 try:
-        client2.mw.connect()
+        print("\nConnecting with client 2...")
+        bt_connect(client2)
 except RuntimeError as e:
         print(e)
         quit()
 
-client1.mw.disconnect()
-
-print("\nDownloading data from client 2...\n")
+print("Downloading data from client 2...\n")
 download_complete = False
 attempt = 1
 if useTwoClients:
@@ -259,24 +331,31 @@ if useTwoClients:
                         if attempt == 4:
                                 break
                         print("Reconnecting, try number {0}...".format(attempt))
-                        client2.mw.disconnect()
-                        client2.mw.connect()
-                        time.sleep(1.0)
+                        try:
+                                bt_reconnect(client2)
+                        except RuntimeError as e:
+                                print(e)
                 else:
 	                download_complete = True
 	                for d in data:
 	                        sens2.data2cvs(d, filename2)
 
+'''
+Reconnect with client 1
+'''
 try:
-        client1.mw.connect()
+        print("\nConnecting with client 1...")
+        bt_connect(client1)
 except RuntimeError as e:
         print(e)
-        client2.mw.disconnect()
+        bt_disconnect(client2)
         quit()
 
 '''
 Let Green LED blinking
 '''
+
+print("\nGreen LEDs of both sensors are blinking for visualization that the whole recording process was successful")
 
 pattern1 = client1.led.load_preset_pattern('blink', repeat_count=10)
 if useTwoClients:
@@ -304,7 +383,7 @@ if useTwoClients:
 Disconnect
 '''
 
-print("\nDisconnecting...")
+print("\nDisconnecting all clients...")
 client1.disconnect()
 if useTwoClients:
 	client2.disconnect()
