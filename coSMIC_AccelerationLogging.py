@@ -15,6 +15,9 @@ import time
 import parallel
 from coSMIC_SensDataSaving import SensDataSaving
 
+from tqdm import TqdmSynchronisationWarning
+import warnings
+
 from pymetawear.client import MetaWearClient
 from pymetawear.exceptions import PyMetaWearException, PyMetaWearDownloadTimeout
 
@@ -22,6 +25,18 @@ address1 = 'E3:53:A4:26:93:0F'
 address2 = 'F4:94:79:03:D2:93'
 
 useTwoClients = True
+
+class color:
+   PURPLE = '\033[95m'
+   CYAN = '\033[96m'
+   DARKCYAN = '\033[36m'
+   BLUE = '\033[94m'
+   GREEN = '\033[92m'
+   YELLOW = '\033[93m'
+   RED = '\033[91m'
+   BOLD = '\033[1m'
+   UNDERLINE = '\033[4m'
+   END = '\033[0m'
 
 '''
 Subfunction: Reconnect client
@@ -50,6 +65,11 @@ Subfunction: Disconnect client
 def bt_disconnect(client):
         time.sleep(0.5)
         client.mw.disconnect()
+
+prompt = "\nPlease specify an identifier for your recording session, i.e dyad_01:\n"
+identifier = raw_input(color.BOLD + prompt + color.END)
+
+print(color.BOLD + "\nConnecting clients..." + color.END)
 
 '''
 Establish connections
@@ -92,7 +112,7 @@ if useTwoClients:
 Set accelerometer settings
 '''
 
-print("\nWrite accelerometer settings...")
+print(color.BOLD + "\nWrite accelerometer settings..." + color.END)
 client1.accelerometer.set_settings(data_rate=400, data_range=4.0)
 
 time.sleep(1.0)
@@ -129,7 +149,7 @@ while not logging_started:
                         bt_disconnect(client2)
                         quit()
         else:
-                print("\nLogging accelerometer data at client 1...")
+                print(color.BOLD + "\nLogging accelerometer data at client 1..." + color.END)
                 parPort.setData(0x64)
                 print("Client 1 startet - 0x64 send\n")
                 time.sleep(0.05)
@@ -163,7 +183,7 @@ if useTwoClients:
                                 bt_disconnect(client1)
                                 quit()
                 else:
-                        print("Logging accelerometer data at client 2...")
+                        print(color.BOLD + "Logging accelerometer data at client 2..." + color.END)
                         parPort.setData(0x66)
                         print("Client 2 startet - 0x66 send\n")
                         time.sleep(0.05)
@@ -206,7 +226,7 @@ bt_disconnect(client2)
 Waiting until q pressed
 '''
 
-prompt = "Press q and Enter to quit logging...\n\n"
+prompt = color.GREEN + color.BOLD + "Press q and Enter to quit logging...\n\n" + color.END
 message = ""
 while message != 'q':
     message = raw_input(prompt)
@@ -227,7 +247,7 @@ Stop logging accelerometer data in client 1
 '''
 
 client1.accelerometer.stop_logging()
-print("Logging stopped at client 1.")
+print(color.BOLD + "Logging stopped at client 1." + color.END)
 parPort.setData(0x65)
 print("Client 1 stopped - 0x65 send")
 time.sleep(0.05)
@@ -252,7 +272,7 @@ Stop logging accelerometer data in client 2
 
 if useTwoClients:
         client2.accelerometer.stop_logging()
-        print("Logging stopped at client 2.")
+        print(color.BOLD + "Logging stopped at client 2." + color.END)
         parPort.setData(0x67)
         print("Client 2 stopped - 0x67 send")
         time.sleep(0.05)
@@ -268,8 +288,8 @@ bt_disconnect(client2)
 Download accelerometer data
 '''
 
-filename1 = 'sensor1.cvs'
-filename2 = 'sensor2.cvs'
+filename1 = identifier + '_sensorE3.cvs'
+filename2 = identifier + '_sensorF4.cvs'
 sens1 = SensDataSaving(filename1)
 if useTwoClients:
 	sens2 = SensDataSaving(filename2)
@@ -284,26 +304,28 @@ except RuntimeError as e:
         print(e)
         quit()
 
-print("Downloading data from client 1...\n")
+print(color.BOLD + "Downloading data from client 1...\n" + color.END)
 download_complete = False
 attempt = 1
 while not download_complete:
-        try:
-                data = client1.accelerometer.download_log()
-        except PyMetaWearDownloadTimeout as inst:
-                print(inst)
-                attempt += 1
-                if attempt == 4:
-                        break
-                print("Reconnecting, try number {0}...".format(attempt))
+        with warnings.catch_warnings():
+                warnings.simplefilter("ignore", TqdmSynchronisationWarning) 
                 try:
-                        bt_reconnect(client1)
-                except RuntimeError as e:
-                        print(e)
-        else:
-                download_complete = True
-                for d in data:
-                        sens1.data2cvs(d, filename1)
+                        data = client1.accelerometer.download_log()
+                except PyMetaWearDownloadTimeout as inst:
+                        print(inst)
+                        attempt += 1
+                        if attempt == 4:
+                                break
+                        print("Reconnecting, try number {0}...".format(attempt))
+                        try:
+                                bt_reconnect(client1)
+                        except RuntimeError as e:
+                                print(e)
+                else:
+                        download_complete = True
+                        for d in data:
+                                sens1.data2cvs(d, filename1)
 
 '''
 Reconnect with client 2, disconnect client 1
@@ -318,27 +340,29 @@ except RuntimeError as e:
         print(e)
         quit()
 
-print("Downloading data from client 2...\n")
+print(color.BOLD + "Downloading data from client 2...\n" + color.END)
 download_complete = False
 attempt = 1
 if useTwoClients:
         while not download_complete:
-                try:
-                        data = client2.accelerometer.download_log()
-                except PyMetaWearDownloadTimeout as inst:
-                        print(inst)
-                        attempt += 1
-                        if attempt == 4:
-                                break
-                        print("Reconnecting, try number {0}...".format(attempt))
+                with warnings.catch_warnings():
+                        warnings.simplefilter("ignore", TqdmSynchronisationWarning) 
                         try:
-                                bt_reconnect(client2)
-                        except RuntimeError as e:
-                                print(e)
-                else:
-	                download_complete = True
-	                for d in data:
-	                        sens2.data2cvs(d, filename2)
+                                data = client2.accelerometer.download_log()
+                        except PyMetaWearDownloadTimeout as inst:
+                                print(inst)
+                                attempt += 1
+                                if attempt == 4:
+                                        break
+                                print("Reconnecting, try number {0}...".format(attempt))
+                                try:
+                                        bt_reconnect(client2)
+                                except RuntimeError as e:
+                                        print(e)
+                        else:
+	                        download_complete = True
+	                        for d in data:
+	                                sens2.data2cvs(d, filename2)
 
 '''
 Reconnect with client 1
@@ -383,7 +407,7 @@ if useTwoClients:
 Disconnect
 '''
 
-print("\nDisconnecting all clients...")
+print(color.BOLD + "\nDisconnecting all clients..." + color.END)
 client1.disconnect()
 if useTwoClients:
 	client2.disconnect()
