@@ -20,6 +20,7 @@ import warnings
 
 from pymetawear.client import MetaWearClient
 from pymetawear.exceptions import PyMetaWearException, PyMetaWearDownloadTimeout
+from pymetawear import libmetawear
 
 address1 = 'E3:53:A4:26:93:0F'
 address2 = 'F4:94:79:03:D2:93'
@@ -58,6 +59,7 @@ def bt_connect(client):
                 client.mw.connect()
         except RuntimeError as e:
                 raise e
+        libmetawear.mbl_mw_settings_set_connection_parameters(client.board, 7.5, 7.5, 0, 6000)
 
 '''
 Subfunction: Disconnect client
@@ -65,6 +67,9 @@ Subfunction: Disconnect client
 def bt_disconnect(client):
         time.sleep(0.5)
         client.mw.disconnect()
+'''
+MAIN PROGRAM
+'''
 
 prompt = "\nPlease specify an identifier for your recording session, i.e dyad_01:\n"
 identifier = raw_input(color.BOLD + prompt + color.END)
@@ -79,7 +84,7 @@ try:
 except RuntimeError as e:
         print(e)
         quit()
-
+libmetawear.mbl_mw_settings_set_connection_parameters(client1.board, 7.5, 7.5, 0, 6000)
 print("New client created: {0}".format(client1))
 
 if useTwoClients:
@@ -89,6 +94,7 @@ if useTwoClients:
                 print(e)
                 client1.disconnect()
                 quit()
+	libmetawear.mbl_mw_settings_set_connection_parameters(client2.board, 7.5, 7.5, 0, 6000)
 	print("New client created: {0} \n".format(client2))
 
 '''
