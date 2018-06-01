@@ -119,12 +119,12 @@ Set accelerometer settings
 '''
 
 print(color.BOLD + "\nWrite accelerometer settings..." + color.END)
-client1.accelerometer.set_settings(data_rate=400, data_range=4.0)
+client1.accelerometer.set_settings(data_rate=100, data_range=4.0)
 
 time.sleep(1.0)
 
 if useTwoClients:
-	client2.accelerometer.set_settings(data_rate=400, data_range=4.0)
+	client2.accelerometer.set_settings(data_rate=100, data_range=4.0)
 
 client1.accelerometer.high_frequency_stream = False
 client2.accelerometer.high_frequency_stream = False
@@ -249,28 +249,28 @@ except RuntimeError as e:
         quit()
 
 '''
+Reconnect with client 2
+'''
+
+try:
+        print("Connecting with client 2...")
+        bt_connect(client2)
+except RuntimeError as e:
+        print(e)
+        quit()
+
+'''
 Stop logging accelerometer data in client 1
 '''
 
 client1.accelerometer.stop_logging()
-print(color.BOLD + "Logging stopped at client 1." + color.END)
+print(color.BOLD + "\nLogging stopped at client 1." + color.END)
 parPort.setData(0x65)
 print("Client 1 stopped - 0x65 send")
 time.sleep(0.05)
 parPort.setData(0x00)
 
-'''
-Reconnect with client 2, disconnect client 1
-'''
-
-print("Disconnect client 1.")
-bt_disconnect(client1)
-try:
-        print("\nConnecting with client 2...")
-        bt_connect(client2)
-except RuntimeError as e:
-        print(e)
-        quit()
+time.sleep(1.0)
 
 '''
 Stop logging accelerometer data in client 2
@@ -278,17 +278,20 @@ Stop logging accelerometer data in client 2
 
 if useTwoClients:
         client2.accelerometer.stop_logging()
-        print(color.BOLD + "Logging stopped at client 2." + color.END)
+        print(color.BOLD + "\nLogging stopped at client 2." + color.END)
         parPort.setData(0x67)
         print("Client 2 stopped - 0x67 send")
         time.sleep(0.05)
         parPort.setData(0x00)
 
 '''
-Disconnect client 2
+Disconnect clients
 '''
-print("Disconnect client 2.")
-bt_disconnect(client2)
+print("\nDisconnect client 1.")
+bt_disconnect(client1)
+if useTwoClients:
+        print("Disconnect client 2.")
+        bt_disconnect(client2)
 
 '''
 Download accelerometer data
