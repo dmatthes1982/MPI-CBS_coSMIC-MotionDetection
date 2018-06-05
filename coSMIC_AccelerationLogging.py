@@ -67,11 +67,23 @@ Subfunction: Disconnect client
 def bt_disconnect(client):
         time.sleep(0.5)
         client.mw.disconnect()
+
+'''
+Subfunction: Battery state
+'''
+def battery_state(data):
+        battery = data['value']
+        if battery.charge > 50:
+                print(color.GREEN + color.BOLD + 'Battery charge is at {0}%'.format(battery.charge) + color.END)
+        else:
+                print(color.RED + color.BOLD + 'Battery charge is at {0}%'.format(battery.charge) + color.END)
+                print(color.RED + 'It is recommended to charge the device after testing!')
+
 '''
 MAIN PROGRAM
 '''
 
-prompt = "\nPlease specify an identifier for your recording session, i.e dyad_01:\n"
+prompt = "\nPlease specify an identifier for your recording session, i.e coSMIC_01:\n"
 identifier = raw_input(color.BOLD + prompt + color.END)
 
 print(color.BOLD + "\nConnecting clients..." + color.END)
@@ -120,22 +132,53 @@ Set accelerometer settings
 
 print(color.BOLD + "\nWrite accelerometer settings..." + color.END)
 client1.accelerometer.set_settings(data_rate=100, data_range=4.0)
-
+client1.accelerometer.high_frequency_stream = False
 time.sleep(1.0)
 
 if useTwoClients:
 	client2.accelerometer.set_settings(data_rate=100, data_range=4.0)
+        client2.accelerometer.high_frequency_stream = False
+        time.sleep(1.0)
 
-client1.accelerometer.high_frequency_stream = False
-client2.accelerometer.high_frequency_stream = False
+'''
+Get battery state
+'''
 
-parPort = parallel.Parallel()
+print("\nSubscribe to battery notifications at client 1...")
+client1.settings.notifications(lambda data: battery_state(data))
 
 time.sleep(1.0)
+
+print(color.BOLD + "Trigger battery state notification at client 1..." + color.END)
+client1.settings.read_battery_state()
+
+time.sleep(2.0)
+
+print("Unsubscribe to battery notifications at client 1...")
+client1.settings.notifications(None)
+
+if useTwoClients:
+        print("\nSubscribe to battery notifications at client 2...")
+        client2.settings.notifications(lambda data: battery_state(data))
+
+        time.sleep(1.0)
+
+        print(color.BOLD + "Trigger battery state notification at client 2..." + color.END)
+        client2.settings.read_battery_state()
+
+        time.sleep(2.0)
+
+        print("Unsubscribe to battery notifications...")
+        client2.settings.notifications(None)
+
 
 '''
 Start logging accelerometer data
 '''
+
+parPort = parallel.Parallel()
+
+time.sleep(2.0)
 
 logging_started = False
 attempt = 1
@@ -297,8 +340,9 @@ if useTwoClients:
 Download accelerometer data
 '''
 
-filename1 = identifier + '_sensorE3.cvs'
-filename2 = identifier + '_sensorF4.cvs'
+folder    = '/data/p_01888/ACCdata/'
+filename1 = folder + identifier + '_sensorE3.cvs'
+filename2 = folder + identifier + '_sensorF4.cvs'
 sens1 = SensDataSaving(filename1)
 if useTwoClients:
 	sens2 = SensDataSaving(filename2)
@@ -372,6 +416,8 @@ if useTwoClients:
 	                        download_complete = True
 	                        for d in data:
 	                                sens2.data2cvs(d, filename2)
+
+print(color.GREEN + color.BOLD + "\nDownload completed! Data are successfully stored in {0}.".format(folder) + color.END)
 
 '''
 Reconnect with client 1
