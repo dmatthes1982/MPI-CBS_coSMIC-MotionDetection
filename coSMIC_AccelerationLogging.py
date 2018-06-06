@@ -86,11 +86,28 @@ MAIN PROGRAM
 prompt = "\nPlease specify an identifier for your recording session, i.e coSMIC_01:\n"
 identifier = raw_input(color.BOLD + prompt + color.END)
 
-print(color.BOLD + "\nConnecting clients..." + color.END)
+'''
+Select sampling frequency
+'''
+
+print(color.BOLD + "\nSelect your desired sampling frequency:" + color.END)
+print("[1] - 400 Hz - maximum recording time: 7 minutes")
+print("[2] - 100 Hz - maximum recording time: 28 minutes")
+s = input("Which frequency do you want to use to? ")
+
+if int(s) == 1:
+        fsample = 400
+elif int(s) == 2:
+        fsample = 100
+else:
+        raise ValueError("Incorrect selection. Aborting...")
 
 '''
 Establish connections
 '''
+
+print(color.BOLD + "\nConnecting clients..." + color.END)
+
 try:
         client1 = MetaWearClient(str(address1), debug=False)
 except RuntimeError as e:
@@ -131,12 +148,12 @@ Set accelerometer settings
 '''
 
 print(color.BOLD + "\nWrite accelerometer settings..." + color.END)
-client1.accelerometer.set_settings(data_rate=100, data_range=4.0)
+client1.accelerometer.set_settings(data_rate=fsample, data_range=4.0)
 client1.accelerometer.high_frequency_stream = False
 time.sleep(1.0)
 
 if useTwoClients:
-	client2.accelerometer.set_settings(data_rate=100, data_range=4.0)
+	client2.accelerometer.set_settings(data_rate=fsample, data_range=4.0)
         client2.accelerometer.high_frequency_stream = False
         time.sleep(1.0)
 
