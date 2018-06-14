@@ -357,7 +357,7 @@ if useTwoClients:
 Download accelerometer data
 '''
 
-folder    = '/data/p_01888/ACCdata/'
+folder    = '/data/p_01888/ACCdata/coSMIC_all/'
 filename1 = folder + identifier + '_sensorE3.cvs'
 filename2 = folder + identifier + '_sensorF4.cvs'
 sens1 = SensDataSaving(filename1)
