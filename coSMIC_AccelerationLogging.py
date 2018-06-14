@@ -319,6 +319,8 @@ except RuntimeError as e:
         print(e)
         quit()
 
+time.sleep(1.0)
+
 '''
 Stop logging accelerometer data in client 1
 '''
