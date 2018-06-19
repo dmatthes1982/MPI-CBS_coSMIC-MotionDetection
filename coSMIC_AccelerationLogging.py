@@ -54,12 +54,20 @@ def bt_reconnect(client):
 Subfunction: Connect client
 '''
 def bt_connect(client):
-        time.sleep(0.5)
-        try:
-                client.mw.connect()
-        except RuntimeError as e:
-                raise e
-        libmetawear.mbl_mw_settings_set_connection_parameters(client.board, 7.5, 7.5, 0, 6000)
+        connected = False
+        while not connected:
+                time.sleep(0.5)
+                try:
+                        client.mw.connect()
+                except RuntimeError as e:
+                        print(color.BOLD + color.RED + "\nFailed connection attempt!" + color.END)
+                        print()
+                        s = input(color.BOLD + "Try it again? [y/n]:" + color.END)
+                        if s == 'n':
+                                raise e
+                else:
+                        connected = True
+                        libmetawear.mbl_mw_settings_set_connection_parameters(client.board, 7.5, 7.5, 0, 6000)
 
 '''
 Subfunction: Disconnect client
@@ -198,22 +206,16 @@ parPort = parallel.Parallel()
 time.sleep(2.0)
 
 logging_started = False
-attempt = 1
 while not logging_started:
         try:
                 client1.accelerometer.start_logging()
         except PyMetaWearException as inst:
                 print(inst)
-                attempt += 1
-                if attempt == 4:
-                        break
-                print("Reconnecting, try number {0}...".format(attempt))
                 try:
                         bt_reconnect(client1)
                 except RuntimeError as e:
                         print(e)
-                        bt_disconnect(client2)
-                        quit()
+                        break
         else:
                 print(color.BOLD + "\nLogging accelerometer data at client 1..." + color.END)
                 parPort.setData(0x64)
@@ -231,23 +233,17 @@ if not logging_started:
 time.sleep(1.0)
 
 logging_started = False
-attempt = 1
 if useTwoClients:
         while not logging_started:
                 try:
                         client2.accelerometer.start_logging()
                 except PyMetaWearException as inst:
                         print(inst)
-                        attempt += 1
-                        if attempt == 4:
-                                break
-                        print("Reconnecting, try number {0}...".format(attempt))
                         try:
                                 bt_reconnect(client2)
                         except RuntimeError as e:
                                 print(e)
-                                bt_disconnect(client1)
-                                quit()
+                                break;
                 else:
                         print(color.BOLD + "Logging accelerometer data at client 2..." + color.END)
                         parPort.setData(0x66)
@@ -298,7 +294,7 @@ while message != 'q':
     message = raw_input(prompt)
 
 '''
-Reconnect with client 1
+Connect with client 1
 '''
 
 try:
@@ -309,13 +305,14 @@ except RuntimeError as e:
         quit()
 
 '''
-Reconnect with client 2
+Connect with client 2
 '''
 
 try:
         print("Connecting with client 2...")
         bt_connect(client2)
 except RuntimeError as e:
+        bt_disconnect(client2)
         print(e)
         quit()
 
@@ -367,7 +364,7 @@ if useTwoClients:
 	sens2 = SensDataSaving(filename2)
 
 '''
-Reconnect with client 1
+Connect with client 1
 '''
 try:
         print("\nConnecting with client 1...")
@@ -378,7 +375,6 @@ except RuntimeError as e:
 
 print(color.BOLD + "Downloading data from client 1...\n" + color.END)
 download_complete = False
-attempt = 1
 while not download_complete:
         with warnings.catch_warnings():
                 warnings.simplefilter("ignore", TqdmSynchronisationWarning) 
@@ -386,21 +382,18 @@ while not download_complete:
                         data = client1.accelerometer.download_log()
                 except PyMetaWearDownloadTimeout as inst:
                         print(inst)
-                        attempt += 1
-                        if attempt == 4:
-                                break
-                        print("Reconnecting, try number {0}...".format(attempt))
                         try:
                                 bt_reconnect(client1)
                         except RuntimeError as e:
                                 print(e)
+                                break
                 else:
                         download_complete = True
                         for d in data:
                                 sens1.data2cvs(d, filename1)
 
 '''
-Reconnect with client 2, disconnect client 1
+Connect with client 2, disconnect client 1
 '''
 
 print("\nDisconnect client 1.")
@@ -414,7 +407,6 @@ except RuntimeError as e:
 
 print(color.BOLD + "Downloading data from client 2...\n" + color.END)
 download_complete = False
-attempt = 1
 if useTwoClients:
         while not download_complete:
                 with warnings.catch_warnings():
@@ -423,14 +415,11 @@ if useTwoClients:
                                 data = client2.accelerometer.download_log()
                         except PyMetaWearDownloadTimeout as inst:
                                 print(inst)
-                                attempt += 1
-                                if attempt == 4:
-                                        break
-                                print("Reconnecting, try number {0}...".format(attempt))
                                 try:
                                         bt_reconnect(client2)
                                 except RuntimeError as e:
                                         print(e)
+                                        break
                         else:
 	                        download_complete = True
 	                        for d in data:
@@ -439,7 +428,7 @@ if useTwoClients:
 print(color.GREEN + color.BOLD + "\nDownload completed! Data are successfully stored in {0}.".format(folder) + color.END)
 
 '''
-Reconnect with client 1
+Connect with client 1
 '''
 try:
         print("\nConnecting with client 1...")
